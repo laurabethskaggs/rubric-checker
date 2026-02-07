@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk } from 'next/font/google';
 import './globals.css';
+import 'katex/dist/katex.min.css';
 
 const font = Space_Grotesk({ subsets: ['latin'], variable: '--font-base' });
 

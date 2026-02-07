@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { parseRubric, type RubricEntry } from './lib/parseRubric';
 
 interface GrammarIssue {
@@ -319,7 +321,14 @@ export default function Page() {
         <h3 style={{ marginTop: 0 }}>Markdown Preview</h3>
         <p className="justification">Live rendering of the model response you entered above.</p>
         <div style={{ marginTop: 12, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--surface-strong)', background: 'rgba(255,255,255,0.02)' }}>
-          <ReactMarkdown className="markdown">{modelResponse || '_Nothing to preview_'}</ReactMarkdown>
+          <ReactMarkdown
+            className="markdown"
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            linkTarget="_blank"
+          >
+            {modelResponse || '_Nothing to preview_'}
+          </ReactMarkdown>
         </div>
       </div>
 
