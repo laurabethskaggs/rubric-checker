@@ -10,11 +10,13 @@ export interface RubricEntry {
 
 export interface ParseResult {
   entries: RubricEntry[];
-  totalScore: number;
+  totalScore: number; // reported grand totals included; kept for backward compatibility
+  expectedTotal: number; // sum of subpart scores (ids containing an underscore)
   wrongVerdicts: number;
   invalidVerdicts: RubricEntry[];
   missingJustifications: RubricEntry[];
   totalMismatches: { id: string; reported: number; expected: number }[];
+  casingIssues: { id: string; type: 'SMILES' | 'PYTHON'; snippet: string }[];
 }
 
 const FIELD_NAMES = ['score', 'verdict', 'justification'];
@@ -62,13 +64,28 @@ export function parseRubric(raw: string): ParseResult {
 
   const entries = Array.from(map.values()).sort((a, b) => a.id.localeCompare(b.id));
   const totalScore = entries.reduce((sum, entry) => sum + (entry.score ?? 0), 0);
+  const expectedTotal = entries
+    .filter((e) => e.id.includes('_'))
+    .reduce((sum, entry) => sum + (entry.score ?? 0), 0);
   const wrongVerdicts = entries.filter((e) => (e.verdict ?? '').toUpperCase().includes('WRONG')).length;
 
   const invalidVerdicts = entries.filter(
     (e) => e.verdict && !ALLOWED_VERDICTS.has(e.verdict.trim().toUpperCase())
   );
 
-  const missingJustifications = entries.filter((e) => !(e.justification && e.justification.trim().length));
+const missingJustifications = entries.filter((e) => !(e.justification && e.justification.trim().length));
+
+  const casingIssues: { id: string; type: 'SMILES' | 'PYTHON'; snippet: string }[] = [];
+  entries.forEach((e) => {
+    if (!e.justification) return;
+    const text = e.justification;
+    if (/smiles/i.test(text) && !text.includes('SMILES')) {
+      casingIssues.push({ id: e.id, type: 'SMILES', snippet: text.slice(0, 120) });
+    }
+    if (/python/i.test(text) && !text.includes('Python')) {
+      casingIssues.push({ id: e.id, type: 'PYTHON', snippet: text.slice(0, 120) });
+    }
+  });
 
   // Treat entries without underscores (e.g., "Q2") as totals; they should equal the sum of their subparts.
   const totalMismatches: { id: string; reported: number; expected: number }[] = [];
@@ -83,5 +100,14 @@ export function parseRubric(raw: string): ParseResult {
     }
   });
 
-  return { entries, totalScore, wrongVerdicts, invalidVerdicts, missingJustifications, totalMismatches };
+  return {
+    entries,
+    totalScore,
+    expectedTotal,
+    wrongVerdicts,
+    invalidVerdicts,
+    missingJustifications,
+    totalMismatches,
+    casingIssues
+  };
 }

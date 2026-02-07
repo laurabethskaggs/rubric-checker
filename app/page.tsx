@@ -105,8 +105,15 @@ export default function Page() {
   const formattingAlerts = [
     parsed.invalidVerdicts.length ? `${parsed.invalidVerdicts.length} invalid verdict format(s)` : null,
     parsed.missingJustifications.length ? `${parsed.missingJustifications.length} missing justification(s)` : null,
-    parsed.totalMismatches.length ? `${parsed.totalMismatches.length} total mismatch(es)` : null
+    parsed.totalMismatches.length ? `${parsed.totalMismatches.length} total mismatch(es)` : null,
+    parsed.casingIssues.length ? `${parsed.casingIssues.length} casing issue(s)` : null
   ].filter(Boolean);
+
+  const totalErrors =
+    parsed.invalidVerdicts.length +
+    parsed.missingJustifications.length +
+    parsed.totalMismatches.length +
+    parsed.casingIssues.length;
 
   return (
     <div className="container">
@@ -144,8 +151,8 @@ export default function Page() {
           <h3 style={{ marginTop: 0 }}>At a glance</h3>
           <div className="stats">
             <div className="stat">
-              <h3>Total Score</h3>
-              <strong>{parsed.totalScore}</strong>
+              <h3>Expected Total</h3>
+              <strong>{parsed.expectedTotal}</strong>
             </div>
             <div className="stat">
               <h3>Items</h3>
@@ -160,8 +167,8 @@ export default function Page() {
               <strong>{totalIssues}</strong>
             </div>
             <div className="stat">
-              <h3>Formatting</h3>
-              <strong>{formattingAlerts.length}</strong>
+              <h3>Total Errors</h3>
+              <strong>{totalErrors}</strong>
             </div>
           </div>
           <p className="footer" style={{ marginTop: 16 }}>
@@ -172,11 +179,11 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 18 }}>
         <h3 style={{ marginTop: 0 }}>Scores &amp; verdicts</h3>
-        {formattingAlerts.length > 0 && (
-          <div className="card" style={{ margin: '12px 0', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.4)' }}>
-            <strong>Formatting issues found:</strong>
-            <ul className="issues">
-              {parsed.invalidVerdicts.length > 0 && (
+          {formattingAlerts.length > 0 && (
+            <div className="card" style={{ margin: '12px 0', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.4)' }}>
+              <strong>Formatting issues found:</strong>
+              <ul className="issues">
+                {parsed.invalidVerdicts.length > 0 && (
                 <li>
                   Invalid verdict format: {parsed.invalidVerdicts.length} item(s). Allowed: "ACCEPTED" or "WRONG_ANSWER".
                 </li>
@@ -196,9 +203,21 @@ export default function Page() {
                   </ul>
                 </li>
               )}
-            </ul>
-          </div>
-        )}
+              {parsed.casingIssues.length > 0 && (
+                <li>
+                  Casing issues:
+                  <ul className="issues">
+                    {parsed.casingIssues.map((c, idx) => (
+                      <li key={`casing-${idx}`}>
+                        {c.id}: ensure {c.type === 'SMILES' ? 'SMILES' : 'Python'} is uppercase/correct casing.
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+              </ul>
+            </div>
+          )}
         <table className="table">
           <thead>
             <tr>
