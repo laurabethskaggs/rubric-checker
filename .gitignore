@@ -1,0 +1,11 @@
+# Node / Next
+node_modules/
+.next/
+out/
+
+# Env
+.env*
+!.env.example
+
+# OS / misc
+.DS_Store
