@@ -325,7 +325,6 @@ export default function Page() {
             className="markdown"
             remarkPlugins={[remarkMath]}
             rehypePlugins={[rehypeKatex]}
-            linkTarget="_blank"
           >
             {modelResponse || '_Nothing to preview_'}
           </ReactMarkdown>

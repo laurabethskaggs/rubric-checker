@@ -9,7 +9,7 @@
   --success: #4ade80;
   --warn: #f97316;
   --error: #f43f5e;
-  --font-base: 'Inter', system-ui;
+  --font-base: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 * {
