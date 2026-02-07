@@ -8,7 +8,7 @@ A lightweight rubric checker to quickly audit scores, verdicts, formatting, and 
 - Formatting checks: allowed verdict values (ACCEPTED, WRONG_ANSWER), missing justifications, total mismatches, SMILES/Python casing hints.
 - Grammar checking via LanguageTool public HTTP endpoint (ignores 2-letter tokens to avoid chemical formulas).
 - Sample rubric data included for fast testing.
-- Markdown preview of the raw rubric text.
+- Markdown preview: enter a model response in the dedicated box and see rendered output below.
 
 ## Setup
 1. Install dependencies:

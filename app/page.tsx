@@ -65,6 +65,7 @@ function formatScore(value?: number) {
 
 export default function Page() {
   const [rawRubric, setRawRubric] = useState<string>(SAMPLE);
+  const [modelResponse, setModelResponse] = useState<string>('');
   const [grammarResults, setGrammarResults] = useState<Record<string, GrammarIssue[]>>({});
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -187,6 +188,17 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ marginTop: 18 }}>
+        <h3 style={{ marginTop: 0 }}>Enter the model response here for a markdown preview</h3>
+        <textarea
+          className="textarea"
+          style={{ minHeight: 180, minWidth: '50%' }}
+          value={modelResponse}
+          onChange={(e) => setModelResponse(e.target.value)}
+          placeholder="Type or paste the model's response here..."
+        />
+      </div>
+
+      <div className="card" style={{ marginTop: 18 }}>
         <h3 style={{ marginTop: 0 }}>Scores &amp; verdicts</h3>
         {formattingAlerts.length > 0 && (
           <div className="card" style={{ margin: '12px 0', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.4)' }}>
@@ -305,9 +317,9 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 18 }}>
         <h3 style={{ marginTop: 0 }}>Markdown Preview</h3>
-        <p className="justification">Rendering of the raw rubric text below (useful for formatted notes).</p>
+        <p className="justification">Live rendering of the model response you entered above.</p>
         <div style={{ marginTop: 12, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--surface-strong)', background: 'rgba(255,255,255,0.02)' }}>
-          <ReactMarkdown className="markdown">{rawRubric || '_Nothing to preview_'}</ReactMarkdown>
+          <ReactMarkdown className="markdown">{modelResponse || '_Nothing to preview_'}</ReactMarkdown>
         </div>
       </div>
 
