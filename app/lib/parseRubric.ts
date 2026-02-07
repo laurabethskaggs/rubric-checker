@@ -12,9 +12,13 @@ export interface ParseResult {
   entries: RubricEntry[];
   totalScore: number;
   wrongVerdicts: number;
+  invalidVerdicts: RubricEntry[];
+  missingJustifications: RubricEntry[];
+  totalMismatches: { id: string; reported: number; expected: number }[];
 }
 
 const FIELD_NAMES = ['score', 'verdict', 'justification'];
+const ALLOWED_VERDICTS = new Set(['ACCEPTED', 'WRONG_ANSWER']);
 
 function detectField(key: string): RubricFieldKey {
   const part = key.split('_').pop() ?? '';
@@ -60,5 +64,24 @@ export function parseRubric(raw: string): ParseResult {
   const totalScore = entries.reduce((sum, entry) => sum + (entry.score ?? 0), 0);
   const wrongVerdicts = entries.filter((e) => (e.verdict ?? '').toUpperCase().includes('WRONG')).length;
 
-  return { entries, totalScore, wrongVerdicts };
+  const invalidVerdicts = entries.filter(
+    (e) => e.verdict && !ALLOWED_VERDICTS.has(e.verdict.trim().toUpperCase())
+  );
+
+  const missingJustifications = entries.filter((e) => !(e.justification && e.justification.trim().length));
+
+  // Treat entries without underscores (e.g., "Q2") as totals; they should equal the sum of their subparts.
+  const totalMismatches: { id: string; reported: number; expected: number }[] = [];
+  const totals = entries.filter((e) => !e.id.includes('_') && typeof e.score === 'number');
+  totals.forEach((total) => {
+    const expected = entries
+      .filter((e) => e.id.startsWith(`${total.id}_`) && typeof e.score === 'number')
+      .reduce((sum, e) => sum + (e.score ?? 0), 0);
+
+    if (typeof total.score === 'number' && total.score !== expected) {
+      totalMismatches.push({ id: total.id, reported: total.score, expected });
+    }
+  });
+
+  return { entries, totalScore, wrongVerdicts, invalidVerdicts, missingJustifications, totalMismatches };
 }

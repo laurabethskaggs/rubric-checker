@@ -102,6 +102,12 @@ export default function Page() {
 
   const totalIssues = Object.values(grammarResults).reduce((sum, arr) => sum + arr.length, 0);
 
+  const formattingAlerts = [
+    parsed.invalidVerdicts.length ? `${parsed.invalidVerdicts.length} invalid verdict format(s)` : null,
+    parsed.missingJustifications.length ? `${parsed.missingJustifications.length} missing justification(s)` : null,
+    parsed.totalMismatches.length ? `${parsed.totalMismatches.length} total mismatch(es)` : null
+  ].filter(Boolean);
+
   return (
     <div className="container">
       <header>
@@ -153,6 +159,10 @@ export default function Page() {
               <h3>Grammar Flags</h3>
               <strong>{totalIssues}</strong>
             </div>
+            <div className="stat">
+              <h3>Formatting</h3>
+              <strong>{formattingAlerts.length}</strong>
+            </div>
           </div>
           <p className="footer" style={{ marginTop: 16 }}>
             Tip: Keep LanguageTool credentials in <code className="code-chip">.env.local</code> when deploying to Vercel.
@@ -162,6 +172,33 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 18 }}>
         <h3 style={{ marginTop: 0 }}>Scores &amp; verdicts</h3>
+        {formattingAlerts.length > 0 && (
+          <div className="card" style={{ margin: '12px 0', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.4)' }}>
+            <strong>Formatting issues found:</strong>
+            <ul className="issues">
+              {parsed.invalidVerdicts.length > 0 && (
+                <li>
+                  Invalid verdict format: {parsed.invalidVerdicts.length} item(s). Allowed: "ACCEPTED" or "WRONG_ANSWER".
+                </li>
+              )}
+              {parsed.missingJustifications.length > 0 && (
+                <li>Missing justification: {parsed.missingJustifications.length} item(s).</li>
+              )}
+              {parsed.totalMismatches.length > 0 && (
+                <li>
+                  Total mismatches:
+                  <ul className="issues">
+                    {parsed.totalMismatches.map((m) => (
+                      <li key={`total-${m.id}`}>
+                        {m.id} reported {m.reported}, expected {m.expected}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
         <table className="table">
           <thead>
             <tr>
