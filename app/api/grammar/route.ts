@@ -52,7 +52,10 @@ export async function POST(req: Request) {
         }
 
         const data = (await response.json()) as { matches?: LanguageToolMatch[] };
-        const issues = (data.matches || []).map((match) => ({
+        // Ignore very short tokens (e.g., 2-letter chemical formulas).
+        const filteredMatches = (data.matches || []).filter((match) => (match.length ?? 0) > 2);
+
+        const issues = filteredMatches.map((match) => ({
           message: match.message,
           shortMessage: match.shortMessage,
           replacements: (match.replacements || []).map((r) => r.value),

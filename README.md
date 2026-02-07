@@ -6,8 +6,9 @@ A lightweight rubric checker to quickly audit scores, verdicts, formatting, and 
 - Paste rubric text and auto-parse into items (score / verdict / justification).
 - Totals and quick stats (expected total from subparts, item count, wrong verdicts, grammar flags, total errors).
 - Formatting checks: allowed verdict values (ACCEPTED, WRONG_ANSWER), missing justifications, total mismatches, SMILES/Python casing hints.
-- Grammar checking via LanguageTool public HTTP endpoint.
+- Grammar checking via LanguageTool public HTTP endpoint (ignores 2-letter tokens to avoid chemical formulas).
 - Sample rubric data included for fast testing.
+- Markdown preview of the raw rubric text.
 
 ## Setup
 1. Install dependencies:

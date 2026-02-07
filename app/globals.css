@@ -206,6 +206,30 @@ button:disabled {
   margin-bottom: 6px;
 }
 
+.markdown {
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 14px 0 8px 0;
+  line-height: 1.2;
+}
+
+.markdown p {
+  margin: 8px 0;
+}
+
+.markdown code {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--surface-strong);
+}
+
 .code-chip {
   font-family: 'JetBrains Mono', monospace;
   padding: 2px 6px;

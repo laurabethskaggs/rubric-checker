@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { parseRubric, type RubricEntry } from './lib/parseRubric';
 
 interface GrammarIssue {
@@ -53,6 +54,14 @@ Q2_D_3_justification: The Python drawing failed to run. Hence, the drawing is ab
 Q2_score: 12
 Q2_verdict: "WRONG_ANSWER"
 Q2_justification: The majority of the question involves drawing. No Python drawing is provided except 2.4. However, the drawing in 2.4 cannot be run in python returned a sequencing error.`;
+
+function formatScore(value?: number) {
+  if (value === undefined || value === null) return '—';
+  const frac = Math.abs(value - Math.trunc(value));
+  if (frac >= 0.95) return Math.round(value).toString();
+  const fixed = value.toFixed(2);
+  return fixed.replace(/\.?0+$/, '');
+}
 
 export default function Page() {
   const [rawRubric, setRawRubric] = useState<string>(SAMPLE);
@@ -152,7 +161,7 @@ export default function Page() {
           <div className="stats">
             <div className="stat">
               <h3>Expected Total</h3>
-              <strong>{parsed.expectedTotal}</strong>
+              <strong>{formatScore(parsed.expectedTotal)}</strong>
             </div>
             <div className="stat">
               <h3>Items</h3>
@@ -179,9 +188,9 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 18 }}>
         <h3 style={{ marginTop: 0 }}>Scores &amp; verdicts</h3>
-          {formattingAlerts.length > 0 && (
-            <div className="card" style={{ margin: '12px 0', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.4)' }}>
-              <strong>Formatting issues found:</strong>
+        {formattingAlerts.length > 0 && (
+          <div className="card" style={{ margin: '12px 0', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.4)' }}>
+            <strong>Formatting issues found:</strong>
               <ul className="issues">
                 {parsed.invalidVerdicts.length > 0 && (
                 <li>
@@ -197,7 +206,7 @@ export default function Page() {
                   <ul className="issues">
                     {parsed.totalMismatches.map((m) => (
                       <li key={`total-${m.id}`}>
-                        {m.id} reported {m.reported}, expected {m.expected}
+                        {m.id} reported {formatScore(m.reported)}, expected {formatScore(m.expected)}
                       </li>
                     ))}
                   </ul>
@@ -245,7 +254,7 @@ export default function Page() {
               return (
                 <tr key={entry.id}>
                   <td><strong>{entry.id}</strong></td>
-                  <td>{entry.score ?? '—'}</td>
+                  <td>{formatScore(entry.score)}</td>
                   <td>
                     <span
                       className={
@@ -292,6 +301,14 @@ export default function Page() {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="card" style={{ marginTop: 18 }}>
+        <h3 style={{ marginTop: 0 }}>Markdown Preview</h3>
+        <p className="justification">Rendering of the raw rubric text below (useful for formatted notes).</p>
+        <div style={{ marginTop: 12, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--surface-strong)', background: 'rgba(255,255,255,0.02)' }}>
+          <ReactMarkdown className="markdown">{rawRubric || '_Nothing to preview_'}</ReactMarkdown>
+        </div>
       </div>
 
       <p className="footer">
