@@ -183,9 +183,6 @@ export default function Page() {
               <strong>{totalErrors}</strong>
             </div>
           </div>
-          <p className="footer" style={{ marginTop: 16 }}>
-            Tip: Keep LanguageTool credentials in <code className="code-chip">.env.local</code> when deploying to Vercel.
-          </p>
         </div>
       </div>
 
