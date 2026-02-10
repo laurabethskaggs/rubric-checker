@@ -163,7 +163,7 @@ const invalidVerdicts = entries.filter(
 
   const skippedIndices: { group: string; missing: number[] }[] = [];
   groupMap.forEach((indices, group) => {
-    const sorted = [...new Set(indices)].sort((a, b) => a - b);
+    const sorted = Array.from(new Set(indices)).sort((a, b) => a - b);
     if (sorted.length === 0) return;
     const max = sorted[sorted.length - 1];
     const missing: number[] = [];
