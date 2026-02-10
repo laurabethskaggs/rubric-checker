@@ -17,6 +17,12 @@ export interface ParseResult {
   missingJustifications: RubricEntry[];
   totalMismatches: { id: string; reported: number; expected: number }[];
   casingIssues: { id: string; type: 'SMILES' | 'PYTHON'; snippet: string }[];
+  missingComponents: { id: string; missing: ('score' | 'verdict' | 'justification')[] }[];
+  duplicateKeys: string[];
+  skippedIndices: { group: string; missing: number[] }[];
+  zeroScoreAccepted: RubricEntry[];
+  verdictConsistency: { id: string; message: string }[];
+  extraQuoteVerdicts: { id: string; raw: string }[];
 }
 
 const FIELD_NAMES = ['score', 'verdict', 'justification'];
@@ -30,6 +36,8 @@ function detectField(key: string): RubricFieldKey {
 
 export function parseRubric(raw: string): ParseResult {
   const map = new Map<string, RubricEntry>();
+  const duplicateKeys: string[] = [];
+  const rawValues = new Map<string, string>();
   const lines = raw.split(/\r?\n/);
 
   lines.forEach((line) => {
@@ -40,10 +48,16 @@ export function parseRubric(raw: string): ParseResult {
     if (!match) return;
 
     const key = match[1].trim();
-    let value = match[2].trim();
-    if (value.startsWith('"') && value.endsWith('"')) {
+    const originalValue = match[2].trim();
+    let value = originalValue;
+    if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
       value = value.slice(1, -1);
     }
+
+    if (rawValues.has(key)) {
+      duplicateKeys.push(key);
+    }
+    rawValues.set(key, originalValue);
 
     const field = detectField(key);
     const baseId = key.split('_').slice(0, -1).join('_') || key;
@@ -69,11 +83,20 @@ export function parseRubric(raw: string): ParseResult {
     .reduce((sum, entry) => sum + (entry.score ?? 0), 0);
   const wrongVerdicts = entries.filter((e) => (e.verdict ?? '').toUpperCase().includes('WRONG')).length;
 
-  const invalidVerdicts = entries.filter(
-    (e) => e.verdict && !ALLOWED_VERDICTS.has(e.verdict.trim().toUpperCase())
-  );
+const invalidVerdicts = entries.filter(
+  (e) => e.verdict && !ALLOWED_VERDICTS.has(e.verdict.trim().toUpperCase())
+);
 
-const missingJustifications = entries.filter((e) => !(e.justification && e.justification.trim().length));
+  const missingJustifications = entries.filter((e) => !(e.justification && e.justification.trim().length));
+
+  const missingComponents: { id: string; missing: ('score' | 'verdict' | 'justification')[] }[] = [];
+  entries.forEach((e) => {
+    const missing: ('score' | 'verdict' | 'justification')[] = [];
+    if (e.score === undefined) missing.push('score');
+    if (!e.verdict) missing.push('verdict');
+    if (!e.justification) missing.push('justification');
+    if (missing.length) missingComponents.push({ id: e.id, missing });
+  });
 
   const casingIssues: { id: string; type: 'SMILES' | 'PYTHON'; snippet: string }[] = [];
   entries.forEach((e) => {
@@ -100,6 +123,66 @@ const missingJustifications = entries.filter((e) => !(e.justification && e.justi
     }
   });
 
+  const zeroScoreAccepted = entries.filter(
+    (e) => e.score === 0 && (e.verdict ?? '').toUpperCase() === 'ACCEPTED'
+  );
+
+  // Verdict consistency: final totals without underscore treated as summary verdicts.
+  const verdictConsistency: { id: string; message: string }[] = [];
+  const topLevelVerdicts = entries.filter((e) => !e.id.includes('_') && e.verdict);
+  const anyWrong = entries.some((e) => (e.verdict ?? '').toUpperCase() === 'WRONG_ANSWER');
+  const allAccepted =
+    entries.filter((e) => e.id.includes('_')).length > 0 &&
+    entries
+      .filter((e) => e.id.includes('_'))
+      .every((e) => (e.verdict ?? '').toUpperCase() === 'ACCEPTED');
+
+  topLevelVerdicts.forEach((e) => {
+    const verdict = (e.verdict ?? '').toUpperCase();
+    if (anyWrong && verdict === 'ACCEPTED') {
+      verdictConsistency.push({ id: e.id, message: 'Contains WRONG_ANSWER sub-items but final verdict is ACCEPTED.' });
+    }
+    if (allAccepted && verdict.includes('WRONG')) {
+      verdictConsistency.push({ id: e.id, message: 'All sub-items ACCEPTED but final verdict is WRONG.' });
+    }
+  });
+
+  // Detect skipped indices per group prefix (e.g., Q1_A_)
+  const groupMap = new Map<string, number[]>();
+  entries.forEach((e) => {
+    const match = e.id.match(/^(.*_)(\d+)$/);
+    if (!match) return;
+    const group = match[1];
+    const idx = Number(match[2]);
+    if (!Number.isNaN(idx)) {
+      const arr = groupMap.get(group) ?? [];
+      arr.push(idx);
+      groupMap.set(group, arr);
+    }
+  });
+
+  const skippedIndices: { group: string; missing: number[] }[] = [];
+  groupMap.forEach((indices, group) => {
+    const sorted = [...new Set(indices)].sort((a, b) => a - b);
+    if (sorted.length === 0) return;
+    const max = sorted[sorted.length - 1];
+    const missing: number[] = [];
+    for (let i = sorted[0]; i <= max; i++) {
+      if (!sorted.includes(i)) missing.push(i);
+    }
+    if (missing.length) skippedIndices.push({ group, missing });
+  });
+
+  // Extra quotes in verdicts (e.g., \"\"ACCEPTED\"\")
+  const extraQuoteVerdicts: { id: string; raw: string }[] = [];
+  rawValues.forEach((rawValue, key) => {
+    if (!key.endsWith('_verdict')) return;
+    if (rawValue.startsWith('""') || rawValue.endsWith('""')) {
+      const baseId = key.split('_').slice(0, -1).join('_') || key;
+      extraQuoteVerdicts.push({ id: baseId, raw: rawValue });
+    }
+  });
+
   return {
     entries,
     totalScore,
@@ -108,6 +191,12 @@ const missingJustifications = entries.filter((e) => !(e.justification && e.justi
     invalidVerdicts,
     missingJustifications,
     totalMismatches,
-    casingIssues
+    casingIssues,
+    missingComponents,
+    duplicateKeys,
+    skippedIndices,
+    zeroScoreAccepted,
+    verdictConsistency,
+    extraQuoteVerdicts
   };
 }

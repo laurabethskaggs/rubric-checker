@@ -71,6 +71,10 @@ export default function Page() {
   const [grammarResults, setGrammarResults] = useState<Record<string, GrammarIssue[]>>({});
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasUnbalancedQuotes = useMemo(() => {
+    const dq = (modelResponse.match(/"/g) || []).length;
+    return dq % 2 === 1;
+  }, [modelResponse]);
 
   const parsed = useMemo(() => parseRubric(rawRubric), [rawRubric]);
 
@@ -118,14 +122,26 @@ export default function Page() {
     parsed.invalidVerdicts.length ? `${parsed.invalidVerdicts.length} invalid verdict format(s)` : null,
     parsed.missingJustifications.length ? `${parsed.missingJustifications.length} missing justification(s)` : null,
     parsed.totalMismatches.length ? `${parsed.totalMismatches.length} total mismatch(es)` : null,
-    parsed.casingIssues.length ? `${parsed.casingIssues.length} casing issue(s)` : null
+    parsed.casingIssues.length ? `${parsed.casingIssues.length} casing issue(s)` : null,
+    parsed.missingComponents.length ? `${parsed.missingComponents.length} incomplete item(s)` : null,
+    parsed.duplicateKeys.length ? `${parsed.duplicateKeys.length} duplicate key(s)` : null,
+    parsed.skippedIndices.length ? `${parsed.skippedIndices.length} sequence gap(s)` : null,
+    parsed.zeroScoreAccepted.length ? `${parsed.zeroScoreAccepted.length} zero-score ACCEPTED item(s)` : null,
+    parsed.verdictConsistency.length ? `${parsed.verdictConsistency.length} final verdict consistency issue(s)` : null,
+    parsed.extraQuoteVerdicts.length ? `${parsed.extraQuoteVerdicts.length} verdict quote issue(s)` : null
   ].filter(Boolean);
 
   const totalErrors =
     parsed.invalidVerdicts.length +
     parsed.missingJustifications.length +
     parsed.totalMismatches.length +
-    parsed.casingIssues.length;
+    parsed.casingIssues.length +
+    parsed.missingComponents.length +
+    parsed.duplicateKeys.length +
+    parsed.skippedIndices.length +
+    parsed.zeroScoreAccepted.length +
+    parsed.verdictConsistency.length +
+    parsed.extraQuoteVerdicts.length;
 
   return (
     <div className="container">
@@ -235,9 +251,67 @@ export default function Page() {
                   </ul>
                 </li>
               )}
-              </ul>
-            </div>
-          )}
+              {parsed.missingComponents.length > 0 && (
+                <li>
+                  Incomplete items:
+                  <ul className="issues">
+                    {parsed.missingComponents.map((m, idx) => (
+                      <li key={`missing-${idx}`}>
+                        {m.id}: missing {m.missing.join(', ')}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+              {parsed.duplicateKeys.length > 0 && (
+                <li>
+                  Duplicate keys: {parsed.duplicateKeys.join(', ')}
+                </li>
+              )}
+              {parsed.skippedIndices.length > 0 && (
+                <li>
+                  Sequence gaps:
+                  <ul className="issues">
+                    {parsed.skippedIndices.map((s, idx) => (
+                      <li key={`skip-${idx}`}>
+                        {s.group} missing {s.missing.join(', ')}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+              {parsed.zeroScoreAccepted.length > 0 && (
+                <li>
+                  Zero-score accepted items: {parsed.zeroScoreAccepted.map((z) => z.id).join(', ')}
+                </li>
+              )}
+              {parsed.verdictConsistency.length > 0 && (
+                <li>
+                  Final verdict consistency:
+                  <ul className="issues">
+                    {parsed.verdictConsistency.map((v, idx) => (
+                      <li key={`vc-${idx}`}>
+                        {v.id}: {v.message}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+              {parsed.extraQuoteVerdicts.length > 0 && (
+                <li>
+                  Verdict quote issues:
+                  <ul className="issues">
+                    {parsed.extraQuoteVerdicts.map((v, idx) => (
+                      <li key={`vq-${idx}`}>
+                        {v.id}: found extra quotes ({v.raw})
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
         <table className="table">
           <thead>
             <tr>
@@ -316,7 +390,14 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 18 }}>
         <h3 style={{ marginTop: 0 }}>Markdown Preview</h3>
-        <p className="justification">Live rendering of the model response you entered above.</p>
+        <p className="justification">
+          Live rendering of the model response you entered above.
+          {hasUnbalancedQuotes && (
+            <span style={{ color: 'var(--warn)', marginLeft: 6 }}>
+              Warning: Unbalanced quotes detected—check the model response for copy errors.
+            </span>
+          )}
+        </p>
         <div style={{ marginTop: 12, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--surface-strong)', background: 'rgba(255,255,255,0.02)' }}>
           <ReactMarkdown
             className="markdown"
