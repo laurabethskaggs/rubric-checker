@@ -215,11 +215,15 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 18 }}>
         <h3 style={{ marginTop: 0 }}>Scores &amp; verdicts</h3>
+        <p className="justification" style={{ marginBottom: 8 }}>
+          Spelling errors might be erroneous if they are related to chemistry formulas or LaTeX code.
+          Please ignore the warnings if they are not errors. Use your best judgement and remember this is a tool—your judgement is more important.
+        </p>
         {formattingAlerts.length > 0 && (
           <div className="card" style={{ margin: '12px 0', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.4)' }}>
             <strong>Formatting issues found:</strong>
-              <ul className="issues">
-                {parsed.invalidVerdicts.length > 0 && (
+            <ul className="issues">
+              {parsed.invalidVerdicts.length > 0 && (
                 <li>
                   Invalid verdict format: {parsed.invalidVerdicts.length} item(s). Allowed: "ACCEPTED" or "WRONG_ANSWER".
                 </li>
